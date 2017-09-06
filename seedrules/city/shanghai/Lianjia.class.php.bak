@@ -1,0 +1,107 @@
+<?php namespace shanghai;
+/**
+ * @description 上海链家地产二手房抓取规则
+ * @classname 上海链家
+ */
+
+Class Lianjia  extends \city\PublicClass
+{
+    Public function house_page(){
+        $PRE_URL = 'http://soa.dooioo.com/api/v4/online/house/ershoufang/search?access_token=7poanTTBCymmgE0FOn1oKp&channel=ershoufang&cityCode=sh&client=wap&limit_count=20&limit_offset=0';
+        $result = json_decode(getHtml($PRE_URL),true);
+        $total = $result['data']['total_count'];
+        $limit_count = 100;
+        $maxPage = floor($total/$limit_count);
+        $link = [];
+        for($Page = 1; $Page <= $maxPage+1; $Page++){
+            $temp = ($Page -1) * $limit_count;
+            $urls[] = "http://soa.dooioo.com/api/v4/online/house/ershoufang/search?access_token=7poanTTBCymmgE0FOn1oKp&channel=ershoufang&cityCode=sh&client=wap&limit_count=".$limit_count."&limit_offset=".$temp."";
+        }
+        return $urls;
+    }
+    /*
+     * 获取列表页
+    */
+    public function house_list($url){
+        $result = json_decode(getHtml($url), true);
+        $lists = $result['data']['list'];
+
+        $resultUrl = [];
+        foreach($lists as $list){
+            $resultUrl[] = "http://sh.lianjia.com/ershoufang/sh{$list['houseSellId']}.html";
+        }
+
+        return $resultUrl;
+    }
+
+
+
+    /*
+     * 获取详情
+    */
+    public function house_detail($source_url){
+        $houseSellId = ltrim(pathinfo($source_url, PATHINFO_FILENAME), 'sh');
+        $apiSourceUrl = "http://soa.dooioo.com/api/v4/online/house/ershoufang/detail?access_token=7poanTTBCymmgE0FOn1oKp&cityCode=sh&client=wap&houseSellId={$houseSellId}&sh_access_token=";
+
+        $result = json_decode(getHtml($source_url), true);
+        //下架检测
+//        $house_info['off_type'] = $this->is_off($source_url,$html);
+        $house_info['source'] = 1;
+        $house_info['company'] = "链家官网";
+
+        $house_info['house_title'] = $result['houseSell']['title']; //标题
+        $house_info['borough_name']= $result['property']['propertyName']; // 小区名称
+        $house_info['cityarea2_id'] = $result['property']['plateName']; // 商圈
+        $house_info['cityarea_id'] = $result['property']['districtName']; // 城区
+        $house_info['house_price']= $result['houseSell']['showPrice']; //价格
+        $house_info['house_totalarea'] = $result['houseSell']['acreage'];  //总面积
+        $house_info['house_room']=$result['houseSell']['room'];//室
+        $house_info['house_hall']=$result['houseSell']['hall'];//厅
+        $house_info['house_toward']= $result['houseSell']['face'];//朝向
+        $house_info['house_floor']= $result['houseSell']['floorTypeName']; // 所在楼层
+        $house_info['house_topfloor'] = $result['houseSell']['totalFloor']; // 总楼层
+        $house_info['house_built_year'] = $result['houseSell']['buildingYear'];//建造年份
+        // 经纪人电话，经纪人名称
+        if(count($result['agents']) > 0){
+            $house_info['owner_phone'] =  $result['agents'][0]['phone'];
+            $house_info['owner_name'] =  $result['agents'][0]['userName'];
+        }else{
+            $house_info['owner_phone'] =  '';
+            $house_info['owner_name'] =  '';
+        }
+
+        //室内图
+        $house_info['house_pic_unit']= implode("|",  array_column($result['picList'], 'fullPhotoUrl'));
+        //$house_info['source_url']=  $_SERVER['config']['source_url_tag']."http://sh.lianjia.com/ershoufang/sh{$result['houseSell']['id']}.html";
+        return $house_info;
+    }
+
+
+    //检测该房源是否下架
+    public function is_off($url,$html=''){
+        if(!empty($url)){
+            if(empty($html)){
+                $html = getHtml($url);
+            }
+            //抓取下架标识
+            $off_type = 1;
+            $newurl = get_jump_url($url);
+            $oldurl = str_replace('shtml','html',$url);
+            if($newurl == $oldurl){   //在链家跳转是生效的
+                $Tag = \QL\QueryList::Query($html,[
+                    "isOff" => ['.pic-cj','class',''],
+                    "404" => ['.sub-tle','text',''],
+                    "shelves" => ['.shelves','class',''],
+                ])->getData(function($item){
+                    return $item;
+                });
+                if(empty($Tag)){
+                    $off_type = 2;
+                    return $off_type;
+                }
+            }
+            return $off_type;
+        }
+        return -1;
+    }
+}

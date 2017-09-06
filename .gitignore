@@ -1,0 +1,17 @@
+/nbproject/private/
+.idea/.name
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+.idea/workspace.xml
+.idea/zhuge-crawler.iml
+.idea/*
+.project
+.settings/*
+crawlerStart/cookie.txt
+server/cookie.txt
+.project
+logs
+logs/*
+crawlerStart/redisError.log
+checkRedisData.php

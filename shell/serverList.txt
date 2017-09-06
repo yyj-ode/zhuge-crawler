@@ -1,0 +1,3 @@
+beijing-Lianjia_server
+beijing-Lianjia_detail_server
+updetail_server

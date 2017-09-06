@@ -1,0 +1,17 @@
+{
+  "name": "vendor_name/package_name",
+  "description": "description_text",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "author's name",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+    "qiniu/php-sdk": "^7.0",
+    "jaeger/querylist": "^3.1",
+    "jaeger/querylist-ext-request": "^1.0"
+  }
+}
